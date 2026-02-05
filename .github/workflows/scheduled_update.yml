@@ -1,0 +1,63 @@
+name: Scheduled calendar update
+
+on:
+  schedule:
+    # daily check (will only run main tasks on first or last day in Asia/Taipei timezone)
+    - cron: '10 0 * * *'
+
+permissions:
+  contents: write
+
+jobs:
+  update-calendar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check if today is first or last day (Asia/Taipei)
+        id: check
+        run: |
+          echo "Checking date in Asia/Taipei..."
+          run_flag=$(python - <<'PY'
+from datetime import datetime
+from zoneinfo import ZoneInfo
+import calendar
+now = datetime.now(ZoneInfo('Asia/Taipei'))
+year, month, day = now.year, now.month, now.day
+last = calendar.monthrange(year, month)[1]
+print('true' if (day == 1 or day == last) else 'false')
+PY
+)
+          echo "run=${run_flag}" >> $GITHUB_OUTPUT
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        if: steps.check.outputs.run == 'true'
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          else
+            pip install pandas requests ics chardet
+          fi
+
+      - name: Run generator
+        if: steps.check.outputs.run == 'true'
+        run: |
+          python generate_calendar.py
+
+      - name: Commit and push outputs
+        if: steps.check.outputs.run == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add output/*.ics TW_gov_calendar.ics README.md || true
+          git commit -m "Automated calendar update: $(date -u +'%Y-%m-%d')" || echo "No changes to commit"
+          git push || echo "Push failed"
