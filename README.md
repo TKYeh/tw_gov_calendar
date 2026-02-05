@@ -1,7 +1,7 @@
 TW_gov_calendar
 =================
 
-此專案用來從 data.gov.tw 自動下載「中華民國政府行政機關辦公日曆」CSV，並轉換成 iCalendar (.ics) 檔案。
+此專案用來從 [data.gov.tw](https://data.gov.tw/dataset/14718) 自動下載「中華民國政府行政機關辦公日曆」CSV，並轉換成 iCalendar (.ics) 檔案。
 
 ***
 訂閱最新行事曆網址為: https://raw.githubusercontent.com/TKYeh/tw_gov_calendar/refs/heads/main/TW_gov_calendar.ics
